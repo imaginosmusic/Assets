@@ -1,6 +1,6 @@
 // Github:   <WHERE YOU STORE IT>
-// By:       Imaginos
-// Contact:  https://app.roll20.net/users/2347390
+// By:       <YOU>
+// Contact:  https://app.roll20.net/users/<YOUR ID>
 
 const RMOE = (() => {// eslint-disable-line no-unused-vars
 
@@ -54,7 +54,7 @@ const RMOE = (() => {// eslint-disable-line no-unused-vars
         }
         else{
             // not a low result. Use the original modified result
-            output += "{{Total Roll=[[" + totalroll + "]]}}";
+            output += "{{Total Roll=[[" + diceroll + modifier +"]]}}";
         }
         // return the output to the chat window to complete low exploding rolls
         // or to display the original result of a non-exploding or high-exploding
