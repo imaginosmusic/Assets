@@ -1,0 +1,136 @@
+Character Name: <span name="attr_character_name"></span>
+
+<br/>Skills Repeater. Add or remove skills. Punch the button to roll the dice!
+
+<fieldset class="repeating_test">
+    <button type="action" name="act_roll">Roll</button>
+    Name: <input type="text" name="attr_test_name" /><br/>
+    Rank Bonus: <input type="number" name="attr_rank_bonus" /><br/>
+    Magic Bonus: <input type="number" name="attr_magic_bonus" /><br/>
+</fieldset>
+    
+</textarea>
+
+<rolltemplate class="sheet-rolltemplate-test">
+    <div class="sheet-template-container">
+        <h1>{{name}}</h1>
+        <div class="sheet-results">
+            
+            <h4>Die Roll = {{computed::dieroll}}</h4>
+            <h4>Result = {{roll1}}</h4>
+            <h4>Custom Result = {{computed::roll1}}</h4>
+            <h4>final = {{finalroll}}</h4>
+            <h3>Final Roll = {{computed::finalroll}}</h3>
+        </div>
+        <div>
+            {{#allprops() roll1 finalroll dieroll }}
+            
+                    <div>
+                        {{key}}: {{value}}
+                    </div>
+                
+            {{/allprops() roll1 finalroll dieroll }}
+        </div>
+    </div>
+</rolltemplate>
+
+<script type="text/worker">
+    on('clicked:test', (info) => {
+        log("starrting roll");
+        startRoll("&{template:test} {{name=Test}} {{roll1=[[1d100!>96+7+6+5+4+3+2+1]]}}", (results) => {
+            const total = results.results.roll1.result;
+            const diceroll = results.results.roll1.rolls[0].results;
+            var roll = 0;
+            if(parseInt(diceroll) < 51){
+                startRoll("&{template:test} {{name=Test}} {{roll1=[[" + diceroll + "-1d100!>96+7+6+5+4+3+2+1]]}}",(resultslow) =>{
+                    const lowtotal = resultslow.results.roll1.result;
+                    const computed = lowtotal;
+                    finishRoll(
+                        resultslow.rollId,
+                        {
+                            roll1: computed
+                        }
+                    );
+                    roll=1;
+                });
+            }
+            if(roll == 0){
+                finishRoll(
+                    results.rollId,
+                    {
+                        roll1: computed
+                    }
+                );   
+            }
+        });
+    });
+    
+    on("clicked:repeating_test:roll",(info) => {
+        
+        var rowid = info.sourceAttribute.split('_')[2];
+        log("row ID: " + rowid);
+        getAttrs(["repeating_test_" + rowid + "_test_name", "repeating_test_" + rowid + "_rank_bonus","repeating_test_" + rowid + "_magic_bonus"],function(values){
+            var name = values["repeating_test_" + rowid + "_test_name"];
+            var rank = parseInt(values["repeating_test_" + rowid + "_rank_bonus"]);
+            var magic = parseInt(values["repeating_test_" + rowid + "_magic_bonus"]);
+            
+            performRoll(name,rank,magic,0,0,0);
+        });
+    });
+    
+    function performRoll(inputName,inputModOne,inputModTwo,inputModThree,inputModFour,inputModFive){
+        var rollCode = "&{template:test} {{name=" + inputName + "}} {{roll1=[[1d100!>96cs>96cf<5";
+        var modCode = "";
+        
+        if(parseInt(inputModOne) != 0){
+            rollCode+= "+ " + inputModOne;
+            modCode+="{{Mod One="+ inputModOne + "}} ";
+        }
+        if(parseInt(inputModTwo) != 0){
+            rollCode+= "+ " + inputModTwo;
+            modCode+="{{Mod Two=" + inputModTwo + "}} ";
+        }
+        if(parseInt(inputModThree) != 0){
+            rollCode+= "+ " + inputModThree;
+            modCode+="{{Mod Three="+ inputModThree + "}} ";
+        }
+        if(parseInt(inputModFour) != 0){
+            rollCode+= "+ " + inputModFour;
+            modCode+="{{Mod Four="+ inputModFour + "}} ";
+        }
+        if(parseInt(inputModFive) != 0){
+            rollCode+= "+ " + inputModFive;
+            modCode+="{{Mod One="+ inputModFive + "}} ";
+        }
+        
+        rollCode+= "]]}} {{lowroll=-[[1d100!>96]]}} {{finalroll=[[0]]}} {{dieroll=[[0]]}}";
+        
+        rollCode+= modCode;
+        
+        startRoll(rollCode,function(result){
+            var dieRoll = result.results.roll1.dice[0];
+            var total = result.results.roll1.result;
+            var down = result.results.lowroll.result;
+            var computed = 0;
+            var final = 0;
+            let rolldata = {};
+            rolldata.dieroll = dieRoll;
+            if(parseInt(dieRoll) < 6){
+                log("Low: " + dieRoll);
+                computed = total - down;
+                final = total - down;
+                rolldata.roll1 = computed;
+                rolldata.finalroll = computed;
+                log("Computed: " + computed);
+            }
+            else{
+                final = total;
+                rolldata.finalroll = final;
+            }
+            log("RD: " + rolldata);
+            
+            finishRoll(result.rollId,rolldata);
+        });
+    };
+    
+</script>
